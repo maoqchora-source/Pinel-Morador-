@@ -39,47 +39,30 @@
 </div>
 
 <script>
-    const LINK_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7jyVJ-hTxoT7k5zigNKg_osDnCj7eC6yWKjSgH00h6FkFlHoekW5b0B09iPTxz7covHsfURZ4B98m/pub?gid=0&single=true&output=csv";
-    const MINHA_VAGA = "ap01"; 
+    // 1. Pega o parâmetro da URL: morador.html?vaga=ap01
+    const urlParams = new URLSearchParams(window.location.search);
+    const MINHA_VAGA = urlParams.get('vaga'); // Pega o valor "ap01"
+
+    if (!MINHA_VAGA) {
+        document.body.innerHTML = "<h1>Erro: Vaga não especificada.</h1>";
+    }
+
+    const LINK_CSV = "LINK_DA_SUA_PLANILHA_PUBLICADA_AQUI";
 
     async function carregarDados() {
-        try {
-            const response = await fetch(LINK_CSV);
-            const data = await response.text();
-            
-            const rows = data.split('\n').slice(1);
-            const historico = rows.map(row => {
-                const [data, vaga, consumo] = row.split(',');
-                return { data, vaga: vaga ? vaga.trim() : "", consumo: parseFloat(consumo) || 0 };
-            }).filter(item => item.vaga.toLowerCase() === MINHA_VAGA);
+        const response = await fetch(LINK_CSV);
+        const data = await response.text();
+        
+        const rows = data.split('\n').slice(1);
+        const historico = rows.map(row => {
+            const [data, vaga, consumo] = row.split(',');
+            return { data, vaga: vaga.trim().toLowerCase(), consumo: parseFloat(consumo) };
+        }).filter(item => item.vaga === MINHA_VAGA.toLowerCase()); // FILTRO DINÂMICO
 
-            // Cálculos
-            const total = historico.reduce((acc, curr) => acc + curr.consumo, 0);
-            document.getElementById('total-kwh').innerText = total.toFixed(2) + " kWh";
-            document.getElementById('total-regs').innerText = historico.length;
-
-            renderizarGrafico(historico);
-        } catch (e) { console.error("Erro ao carregar:", e); }
+        renderizarGrafico(historico);
     }
-
-    function renderizarGrafico(dados) {
-        new Chart(document.getElementById('grafico').getContext('2d'), {
-            type: 'line',
-            data: {
-                labels: dados.map(d => d.data),
-                datasets: [{
-                    label: 'Consumo (kWh)',
-                    data: dados.map(d => d.consumo),
-                    borderColor: '#10b981',
-                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                    borderWidth: 3,
-                    fill: true,
-                    tension: 0.3
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
-    }
+    
+    // ... restante da função renderizarGrafico ...
     carregarDados();
 </script>
 </body>
