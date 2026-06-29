@@ -2,43 +2,85 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel de Consumo - AbrangeBox</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    </head>
+    <style>
+        :root { --bg: #f1f5f9; --card: #ffffff; --primary: #10b981; --text: #1e293b; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); padding: 40px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 900px; }
+        
+        .header { margin-bottom: 30px; }
+        .header h1 { font-size: 28px; font-weight: 800; color: #0f172a; }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .card { background: var(--card); padding: 25px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        .card h3 { font-size: 14px; color: #64748b; margin-bottom: 10px; }
+        .card p { font-size: 24px; font-weight: 700; color: var(--text); }
+        
+        .chart-container { background: var(--card); padding: 30px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; height: 400px; }
+    </style>
+</head>
 <body>
-    <h1>Seu Consumo - Vaga <span id="vaga-id"></span></h1>
-    <div style="width: 80%; height: 300px;"><canvas id="grafico"></canvas></div>
 
-    <script>
-        // COLE O LINK DO "PUBLICAR NA WEB" AQUI
-        const LINK_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7jyVJ-hTxoT7k5zigNKg_osDnCj7eC6yWKjSgH00h6FkFlHoekW5b0B09iPTxz7covHsfURZ4B98m/pub?gid=0&single=true&output=csv";
-        const MINHA_VAGA = "ap01"; // Vaga 1
+<div class="container">
+    <div class="header">
+        <h1>Dashboard da Vaga: <span id="vaga-id">AP-01</span></h1>
+    </div>
 
-        async function carregarDados() {
+    <div class="stats-grid">
+        <div class="card"><h3>Consumo Total</h3><p id="total-kwh">0 kWh</p></div>
+        <div class="card"><h3>Total de Registros</h3><p id="total-regs">0</p></div>
+    </div>
+
+    <div class="chart-container">
+        <canvas id="grafico"></canvas>
+    </div>
+</div>
+
+<script>
+    const LINK_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7jyVJ-hTxoT7k5zigNKg_osDnCj7eC6yWKjSgH00h6FkFlHoekW5b0B09iPTxz7covHsfURZ4B98m/pub?gid=0&single=true&output=csv";
+    const MINHA_VAGA = "ap01"; 
+
+    async function carregarDados() {
+        try {
             const response = await fetch(LINK_CSV);
             const data = await response.text();
             
-            // Converte CSV para Array de Objetos
-            const rows = data.split('\n').slice(1); // Remove cabeçalho
+            const rows = data.split('\n').slice(1);
             const historico = rows.map(row => {
                 const [data, vaga, consumo] = row.split(',');
-                return { data, vaga: vaga.trim(), consumo: parseFloat(consumo) };
-            }).filter(item => item.vaga === MINHA_VAGA);
+                return { data, vaga: vaga ? vaga.trim() : "", consumo: parseFloat(consumo) || 0 };
+            }).filter(item => item.vaga.toLowerCase() === MINHA_VAGA);
+
+            // Cálculos
+            const total = historico.reduce((acc, curr) => acc + curr.consumo, 0);
+            document.getElementById('total-kwh').innerText = total.toFixed(2) + " kWh";
+            document.getElementById('total-regs').innerText = historico.length;
 
             renderizarGrafico(historico);
-        }
+        } catch (e) { console.error("Erro ao carregar:", e); }
+    }
 
-        function renderizarGrafico(dados) {
-            const ctx = document.getElementById('grafico').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: dados.map(d => d.data),
-                    datasets: [{ label: 'Consumo (kWh)', data: dados.map(d => d.consumo), borderColor: '#10b981' }]
-                }
-            });
-        }
-        carregarDados();
-    </script>
+    function renderizarGrafico(dados) {
+        new Chart(document.getElementById('grafico').getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: dados.map(d => d.data),
+                datasets: [{
+                    label: 'Consumo (kWh)',
+                    data: dados.map(d => d.consumo),
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    }
+    carregarDados();
+</script>
 </body>
 </html>
