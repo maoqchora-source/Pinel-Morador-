@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Painel de Consumo - AbrangeBox</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    </head>
+<body>
+    <h1>Seu Consumo - Vaga <span id="vaga-id"></span></h1>
+    <div style="width: 80%; height: 300px;"><canvas id="grafico"></canvas></div>
+
+    <script>
+        // COLE O LINK DO "PUBLICAR NA WEB" AQUI
+        const LINK_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7jyVJ-hTxoT7k5zigNKg_osDnCj7eC6yWKjSgH00h6FkFlHoekW5b0B09iPTxz7covHsfURZ4B98m/pub?gid=0&single=true&output=csv";
+        const MINHA_VAGA = "ap01"; // Vaga 1
+
+        async function carregarDados() {
+            const response = await fetch(LINK_CSV);
+            const data = await response.text();
+            
+            // Converte CSV para Array de Objetos
+            const rows = data.split('\n').slice(1); // Remove cabeçalho
+            const historico = rows.map(row => {
+                const [data, vaga, consumo] = row.split(',');
+                return { data, vaga: vaga.trim(), consumo: parseFloat(consumo) };
+            }).filter(item => item.vaga === MINHA_VAGA);
+
+            renderizarGrafico(historico);
+        }
+
+        function renderizarGrafico(dados) {
+            const ctx = document.getElementById('grafico').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dados.map(d => d.data),
+                    datasets: [{ label: 'Consumo (kWh)', data: dados.map(d => d.consumo), borderColor: '#10b981' }]
+                }
+            });
+        }
+        carregarDados();
+    </script>
+</body>
+</html>
