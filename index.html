@@ -48,7 +48,6 @@
     }
 
     const LINK_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7jyVJ-hTxoT7k5zigNKg_osDnCj7eC6yWKjSgH00h6FkFlHoekW5b0B09iPTxz7covHsfURZ4B98m/pub?gid=0&single=true&output=csv";
-
     async function carregarDados() {
         const response = await fetch(LINK_CSV);
         const data = await response.text();
