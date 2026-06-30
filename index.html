@@ -43,34 +43,25 @@
     const MINHA_VAGA = urlParams.get('vaga');
     document.getElementById('vaga-id').innerText = MINHA_VAGA ? MINHA_VAGA.toUpperCase() : "ERRO";
 
-    if (!MINHA_VAGA) {
-        document.body.innerHTML = "<h1>Erro: Vaga não especificada na URL.</h1>";
-    }
-
-    // SUBSTITUA PELA SUA URL REAL DO WEB APP (DEPLOYMENT)
-    // Exemplo: 'https://script.google.com/macros/s/SEU_ID_AQUI/exec'
     const URL_GAS = 'https://script.google.com/macros/s/AKfycbzokzR3uzo9PYgTFbRcXWp1X9tVUX0uFKDDgfBvKj_I1Ip7_omTZ1pJFWVzXcqROlcbLg/exec';
 
-    async function carregarDados() {
-        try {
-            // O GAS retorna JSON, então usamos fetch direto
-            const response = await fetch(URL_GAS);
-            const dadosCompletos = await response.json();
-            
-            // Filtra os dados que pertencem apenas a esta vaga
-            const historico = dadosCompletos.filter(item => 
-                item.vaga.trim().toLowerCase() === MINHA_VAGA.toLowerCase()
-            );
+    // Esta função será chamada pelo Google automaticamente
+    function processarDados(dadosCompletos) {
+        const historico = dadosCompletos.filter(item => 
+            item.vaga.trim().toLowerCase() === MINHA_VAGA.toLowerCase()
+        );
+        renderizarGrafico(historico);
+    }
 
-            renderizarGrafico(historico);
-        } catch (error) {
-            console.error("Erro ao buscar dados do GAS:", error);
-            alert("Não foi possível carregar os dados. Verifique o console.");
-        }
+    // Carrega os dados via JSONP (injetando uma tag script)
+    function carregarDados() {
+        const script = document.createElement('script');
+        script.src = URL_GAS + '?callback=processarDados';
+        document.body.appendChild(script);
     }
 
     function renderizarGrafico(historico) {
-        const totalConsumo = historico.reduce((acc, curr) => acc + (isNaN(curr.consumo) ? 0 : curr.consumo), 0);
+        const totalConsumo = historico.reduce((acc, curr) => acc + curr.consumo, 0);
         document.getElementById('total-kwh').innerText = totalConsumo.toFixed(2) + " kWh";
         document.getElementById('total-regs').innerText = historico.length;
 
