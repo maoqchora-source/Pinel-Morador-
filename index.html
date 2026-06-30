@@ -46,12 +46,10 @@
     if (!MINHA_VAGA) {
         document.body.innerHTML = "<h1>Erro: Vaga não especificada.</h1>";
     }
-
     const LINK_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7jyVJ-hTxoT7k5zigNKg_osDnCj7eC6yWKjSgH00h6FkFlHoekW5b0B09iPTxz7covHsfURZ4B98m/pub?gid=0&single=true&output=csv";
     async function carregarDados() {
         const response = await fetch(LINK_CSV);
         const data = await response.text();
-        
         const rows = data.split('\n').slice(1);
         const historico = rows.map(row => {
             const [data, vaga, consumo] = row.split(',');
