@@ -64,3 +64,25 @@
 </script>
 </body>
 </html>
+function renderizarGrafico(historico) {
+    // Atualiza os cards com os totais
+    const totalConsumo = historico.reduce((acc, curr) => acc + curr.consumo, 0);
+    document.getElementById('total-kwh').innerText = totalConsumo.toFixed(2) + " kWh";
+    document.getElementById('total-regs').innerText = historico.length;
+
+    // Prepara os dados para o Chart.js
+    const ctx = document.getElementById('grafico').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: historico.map(item => item.data),
+            datasets: [{
+                label: 'Consumo (kWh)',
+                data: historico.map(item => item.consumo),
+                borderColor: '#10b981',
+                tension: 0.3
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+}
