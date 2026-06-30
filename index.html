@@ -25,11 +25,11 @@
 
 <div class="container">
     <div class="header">
-        <h1>Dashboard da Vaga: <span id="vaga-id">AP-01</span></h1>
+        <h1>Dashboard da Vaga: <span id="vaga-id">Carregando...</span></h1>
     </div>
 
     <div class="stats-grid">
-        <div class="card"><h3>Consumo Total</h3><p id="total-kwh">0 kWh</p></div>
+        <div class="card"><h3>Consumo Total</h3><p id="total-kwh">0.00 kWh</p></div>
         <div class="card"><h3>Total de Registros</h3><p id="total-regs">0</p></div>
     </div>
 
@@ -41,27 +41,34 @@
 <script>
     const urlParams = new URLSearchParams(window.location.search);
     const MINHA_VAGA = urlParams.get('vaga');
+    document.getElementById('vaga-id').innerText = MINHA_VAGA ? MINHA_VAGA.toUpperCase() : "ERRO";
 
     if (!MINHA_VAGA) {
-        document.body.innerHTML = "<h1>Erro: Vaga não especificada.</h1>";
+        document.body.innerHTML = "<h1>Erro: Vaga não especificada na URL.</h1>";
     }
 
-    const LINK_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7jyVJ-hTxoT7k5zigNKg_osDnCj7eC6yWKjSgH00h6FkFlHoekW5b0B09iPTxz7covHsfURZ4B98m/pub?gid=0&single=true&output=csv';
+    // SUBSTITUA PELA SUA URL REAL DO WEB APP (DEPLOYMENT)
+    // Exemplo: 'https://script.google.com/macros/s/SEU_ID_AQUI/exec'
+    const URL_GAS = 'https://script.google.com/macros/s/AKfycbzokzR3uzo9PYgTFbRcXWp1X9tVUX0uFKDDgfBvKj_I1Ip7_omTZ1pJFWVzXcqROlcbLg/exec';
 
     async function carregarDados() {
-        const response = await fetch(LINK_CSV);
-        const data = await response.text();
-        const rows = data.split('\n').slice(1);
-        
-        const historico = rows.map(row => {
-            const [data, vaga, consumo] = row.split(',');
-            return { data, vaga: vaga ? vaga.trim().toLowerCase() : '', consumo: parseFloat(consumo) };
-        }).filter(item => item.vaga === MINHA_VAGA.toLowerCase());
+        try {
+            // O GAS retorna JSON, então usamos fetch direto
+            const response = await fetch(URL_GAS);
+            const dadosCompletos = await response.json();
+            
+            // Filtra os dados que pertencem apenas a esta vaga
+            const historico = dadosCompletos.filter(item => 
+                item.vaga.trim().toLowerCase() === MINHA_VAGA.toLowerCase()
+            );
 
-        renderizarGrafico(historico);
+            renderizarGrafico(historico);
+        } catch (error) {
+            console.error("Erro ao buscar dados do GAS:", error);
+            alert("Não foi possível carregar os dados. Verifique o console.");
+        }
     }
 
-    // A FUNÇÃO DEVE ESTAR AQUI DENTRO!
     function renderizarGrafico(historico) {
         const totalConsumo = historico.reduce((acc, curr) => acc + (isNaN(curr.consumo) ? 0 : curr.consumo), 0);
         document.getElementById('total-kwh').innerText = totalConsumo.toFixed(2) + " kWh";
@@ -76,6 +83,8 @@
                     label: 'Consumo (kWh)',
                     data: historico.map(item => item.consumo),
                     borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    fill: true,
                     tension: 0.3
                 }]
             },
@@ -87,4 +96,3 @@
 </script>
 </body>
 </html>
-
