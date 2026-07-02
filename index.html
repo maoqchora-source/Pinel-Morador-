@@ -15,6 +15,7 @@
         input:focus { border-color: #3b82f6; outline: none; background-color: white; }
         button { background-color: #3b82f6; color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; margin-top: 30px; width: 100%; font-size: 16px; font-weight: bold; box-shadow: 0 4px 6px rgba(59, 130, 246, 0.2); }
         button:hover { background-color: #2563eb; }
+        .mensagem-erro { color: #ef4444; font-size: 13px; text-align: center; margin-top: 15px; display: none; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -23,16 +24,78 @@
     <h1>ABRANGE<span>BOX</span></h1>
     <p>Área do Condômino - Consumo de Energia</p>
     
-    <form action="/login_morador" method="POST">
+    <form id="formLogin" onsubmit="efetuarLogin(event)">
         <label>ID de Acesso da Vaga:</label>
-        <input type="number" name="id_hardware" placeholder="Ex: 3" required>
+        <input type="number" id="id_hardware" placeholder="Ex: 3" required>
         
         <label>Senha:</label>
-        <input type="password" name="senha" placeholder="Digite sua senha" required>
+        <input type="password" id="senha" placeholder="Digite sua senha" required>
         
-        <button type="submit">Entrar no Meu Painel</button>
+        <div id="erroLogin" class="mensagem-erro">Vaga ou senha incorreta!</div>
+
+        <button type="submit" id="btnEntrar">Entrar no Meu Painel</button>
     </form>
 </div>
+
+<script>
+    async function efetuarLogin(event) {
+        // Impede a página de recarregar
+        event.preventDefault(); 
+        
+        const txtVaga = document.getElementById('id_hardware').value;
+        const txtSenha = document.getElementById('senha').value;
+        const btn = document.getElementById('btnEntrar');
+        const erroBox = document.getElementById('erroLogin');
+
+        // Insira aqui a URL exata do seu Web App implantado no Google Apps Script
+        const urlGAS = "SUA_URL_DO_WEB_APP_DO_GOOGLE_AQUI";
+
+        // Feedback visual de carregamento
+        btn.innerText = "Verificando...";
+        btn.style.backgroundColor = "#94a3b8";
+        btn.disabled = true;
+        erroBox.style.display = "none";
+
+        try {
+            // Dispara a consulta para o GAS via POST (seguro)
+            const resposta = await fetch(urlGAS, {
+                method: 'POST',
+                body: JSON.stringify({ 
+                    vaga: txtVaga, 
+                    senha: txtSenha, 
+                    acao: "verificar_login" 
+                })
+            });
+            
+            const resultado = await resposta.json();
+
+            if (resultado.status === "sucesso") {
+                // Salva os dados na sessão temporária do navegador
+                sessionStorage.setItem('vagaLogada', txtVaga);
+                sessionStorage.setItem('senhaLogada', txtSenha);
+                
+                // Redireciona para a segunda página (Dashboard)
+                window.location.href = "dashboard.html";
+            } else {
+                // Se a senha estiver errada
+                erroBox.innerText = resultado.mensagem || "Erro ao fazer login.";
+                erroBox.style.display = "block";
+                resetBotao();
+            }
+        } catch (error) {
+            erroBox.innerText = "Erro de conexão com o servidor.";
+            erroBox.style.display = "block";
+            resetBotao();
+        }
+    }
+
+    function resetBotao() {
+        const btn = document.getElementById('btnEntrar');
+        btn.innerText = "Entrar no Meu Painel";
+        btn.style.backgroundColor = "#3b82f6";
+        btn.disabled = false;
+    }
+</script>
 
 </body>
 </html>
