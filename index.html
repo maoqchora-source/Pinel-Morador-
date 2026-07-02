@@ -7,9 +7,11 @@
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f1f5f9; display: flex; height: 100vh; justify-content: center; align-items: center; }
         .login-card { background: white; padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); width: 100%; max-width: 380px; border: 1px solid #e2e8f0; }
-        h1 { color: #3b82f6; font-size: 26px; text-align: center; margin-bottom: 5px; font-weight: 800; letter-spacing: -0.5px; }
-        h1 span { color: #10b981; }
-        p { text-align: center; color: #64748b; font-size: 14px; margin-bottom: 30px; }
+        
+        /* Estilização da embalagem da logo para garantir a centralização */
+        .logo-wrapper { text-align: center; margin-bottom: 25px; }
+        .logo-wrapper img { width: 100%; max-width: 550px; height: auto; }
+
         label { font-weight: 600; display: block; margin-top: 15px; color: #1e293b; font-size: 14px; }
         input { width: 100%; padding: 12px; margin-top: 6px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; background-color: #f8fafc; transition: border 0.2s; }
         input:focus { border-color: #3b82f6; outline: none; background-color: white; }
@@ -21,12 +23,13 @@
 <body>
 
 <div class="login-card">
-    <h1>ABRANGE<span>BOX</span></h1>
-    <p>Área do Condômino - Consumo de Energia</p>
+    <div class="logo-wrapper">
+        <img src="logo.png" alt="Logo AbrangeBox">
+    </div>
     
     <form id="formLogin" onsubmit="efetuarLogin(event)">
         <label>ID de Acesso da Vaga:</label>
-        <input type="number" id="id_hardware" placeholder="Ex: 3" required>
+        <input type="text" id="id_hardware" placeholder="Ex: ap01 ou 01" required>
         
         <label>Senha:</label>
         <input type="password" id="senha" placeholder="Digite sua senha" required>
@@ -42,8 +45,8 @@
         // Impede a página de recarregar
         event.preventDefault(); 
         
-        const txtVaga = document.getElementById('id_hardware').value;
-        const txtSenha = document.getElementById('senha').value;
+        const txtVaga = document.getElementById('id_hardware').value.trim();
+        const txtSenha = document.getElementById('senha').value.trim();
         const btn = document.getElementById('btnEntrar');
         const erroBox = document.getElementById('erroLogin');
 
