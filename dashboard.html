@@ -16,7 +16,6 @@
         th, td { padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: left; }
         th { background-color: #f8fafc; color: #64748b; font-size: 14px; }
         
-        /* Botão Sair integrado ao seu design */
         .btn-logout {
             position: absolute;
             top: 0;
@@ -50,15 +49,15 @@
     <h1>Dashboard da Vaga: <span id="vaga-id">Carregando...</span></h1>
     
     <div class="stats-grid">
-        <div class="card"><h3>Consumo Total</h3><p id="total-kwh">0.00 kWh</p></div>
+        <div class="card"><h3>Consumo Atual Acumulado</h3><p id="total-kwh">0.00 kWh</p></div>
         <div class="card"><h3>Total de Registros</h3><p id="total-regs">0</p></div>
     </div>
 
     <div class="card">
-        <h3>Histórico de Consumo</h3>
+        <h3>Histórico de Leituras</h3>
         <table id="tabela-consumo">
             <thead>
-                <tr><th>Data</th><th>Consumo (kWh)</th></tr>
+                <tr><th>Data</th><th>Consumo na Leitura (kWh)</th></tr>
             </thead>
             <tbody id="corpo-tabela"></tbody>
         </table>
@@ -66,31 +65,25 @@
 </div>
 
 <script>
-    // Dispara a leitura assim que a página renderizar
     window.onload = function() {
         carregarDadosSeguros();
     };
 
     async function carregarDadosSeguros() {
-        // 1. Puxa os dados salvos temporariamente pelo index.html
         const MINHA_VAGA = sessionStorage.getItem('vagaLogada');
         const MINHA_SENHA = sessionStorage.getItem('senhaLogada');
 
-        // 2. Proteção: Se não houver login ativo, expulsa de volta para o index
         if (!MINHA_VAGA || !MINHA_SENHA) {
             alert("Acesso negado! Por favor, faça o login.");
             window.location.href = "index.html";
             return;
         }
 
-        // Exibe o número da vaga na tela
         document.getElementById('vaga-id').innerText = MINHA_VAGA.toUpperCase();
 
-        // Sua URL do Google Apps Script mantida
         const URL_GAS = 'https://script.google.com/macros/s/AKfycbzokzR3uzo9PYgTFbRcXWp1X9tVUX0uFKDDgfBvKj_I1Ip7_omTZ1pJFWVzXcqROlcbLg/exec';
 
         try {
-            // 3. Faz a chamada POST requisitando os dados filtrados diretamente do GAS
             const resposta = await fetch(URL_GAS, {
                 method: 'POST',
                 body: JSON.stringify({
@@ -103,7 +96,6 @@
             const resultado = await resposta.json();
 
             if (resultado.status === "sucesso") {
-                // Passa os dados recebidos para a sua função de renderização
                 renderizarLista(resultado.dados);
             } else {
                 alert(resultado.mensagem || "Erro de autenticação.");
@@ -115,28 +107,31 @@
         }
     }
 
-    // Sua função original de processamento e montagem visual mantida intacta
     function renderizarLista(historico) {
-        const totalConsumo = historico.reduce((acc, curr) => acc + curr.consumo, 0);
-        document.getElementById('total-kwh').innerText = totalConsumo.toFixed(2) + " kWh";
         document.getElementById('total-regs').innerText = historico.length;
-
         const corpoTabela = document.getElementById('corpo-tabela');
         corpoTabela.innerHTML = ""; 
 
         if (historico.length === 0) {
+            document.getElementById('total-kwh').innerText = "0.00 kWh";
             corpoTabela.innerHTML = "<tr><td colspan='2' style='text-align: center; color: #64748b;'>Nenhum registro encontrado para esta vaga.</td></tr>";
             return;
         }
 
-        historico.forEach(item => {
+        // CORREÇÃO AQUI: Pega o valor do ÚLTIMO elemento do array (o mais recente da planilha)
+        const ultimoRegistro = historico[historico.length - 1];
+        document.getElementById('total-kwh').innerText = ultimoRegistro.consumo.toFixed(2) + " kWh";
+
+        // OPTATIVO: Inverte o histórico para mostrar o mais recente no topo da tabela do usuário
+        const historicoInvertido = [...historico].reverse();
+
+        historicoInvertido.forEach(item => {
             const dataFormatada = new Date(item.data).toLocaleString('pt-BR');
             corpoTabela.innerHTML += `<tr><td>${dataFormatada}</td><td>${item.consumo.toFixed(2)} kWh</td></tr>`;
         });
     }
 
-    // Função para limpar a sessão ao sair
-    function efectuarLogout() {
+    function efetuarLogout() {
         sessionStorage.clear();
         window.location.href = "index.html";
     }
