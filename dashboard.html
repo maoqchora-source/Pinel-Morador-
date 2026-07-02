@@ -2,17 +2,40 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel de Consumo - AbrangeBox</title>
     <style>
         :root { --bg: #f1f5f9; --card: #ffffff; --primary: #10b981; --text: #1e293b; }
         body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); padding: 40px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 900px; }
+        .container { width: 100%; max-width: 900px; position: relative; }
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
         .card { background: var(--card); padding: 25px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; margin-bottom: 20px; }
         .card h3 { font-size: 14px; color: #64748b; margin-bottom: 10px; }
         .card p { font-size: 24px; font-weight: 700; color: var(--text); }
         table { border-collapse: collapse; width: 100%; margin-top: 10px; }
         th, td { padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: left; }
+        th { background-color: #f8fafc; color: #64748b; font-size: 14px; }
+        
+        /* Botão Sair integrado ao seu design */
+        .btn-logout {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        .btn-logout:hover { background-color: #dc2626; }
+
+        @media (max-width: 600px) {
+            .btn-logout { position: static; display: block; margin: 10px auto 20px auto; width: fit-content; }
+        }
     </style>
 </head>
 <body>
@@ -21,6 +44,8 @@
     <div style="text-align: center; margin-bottom: 20px;">
         <img src="logo.png" alt="Logo AbrangeBox" style="max-width: 550px; height: auto;">
     </div>
+    
+    <button class="btn-logout" onclick="efetuarLogout()">Sair do Painel</button>
     
     <h1>Dashboard da Vaga: <span id="vaga-id">Carregando...</span></h1>
     
@@ -41,26 +66,56 @@
 </div>
 
 <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const MINHA_VAGA = urlParams.get('vaga');
-    document.getElementById('vaga-id').innerText = MINHA_VAGA ? MINHA_VAGA.toUpperCase() : "ERRO";
+    // Dispara a leitura assim que a página renderizar
+    window.onload = function() {
+        carregarDadosSeguros();
+    };
 
-    const URL_GAS = 'https://script.google.com/macros/s/AKfycbzokzR3uzo9PYgTFbRcXWp1X9tVUX0uFKDDgfBvKj_I1Ip7_omTZ1pJFWVzXcqROlcbLg/exec';
+    async function carregarDadosSeguros() {
+        // 1. Puxa os dados salvos temporariamente pelo index.html
+        const MINHA_VAGA = sessionStorage.getItem('vagaLogada');
+        const MINHA_SENHA = sessionStorage.getItem('senhaLogada');
 
-    function processarDados(dadosCompletos) {
-        if (!MINHA_VAGA) return;
-        const historico = dadosCompletos.filter(item => 
-            item.vaga && item.vaga.trim().toLowerCase() === MINHA_VAGA.toLowerCase()
-        );
-        renderizarLista(historico);
+        // 2. Proteção: Se não houver login ativo, expulsa de volta para o index
+        if (!MINHA_VAGA || !MINHA_SENHA) {
+            alert("Acesso negado! Por favor, faça o login.");
+            window.location.href = "index.html";
+            return;
+        }
+
+        // Exibe o número da vaga na tela
+        document.getElementById('vaga-id').innerText = MINHA_VAGA.toUpperCase();
+
+        // Sua URL do Google Apps Script mantida
+        const URL_GAS = 'https://script.google.com/macros/s/AKfycbzokzR3uzo9PYgTFbRcXWp1X9tVUX0uFKDDgfBvKj_I1Ip7_omTZ1pJFWVzXcqROlcbLg/exec';
+
+        try {
+            // 3. Faz a chamada POST requisitando os dados filtrados diretamente do GAS
+            const resposta = await fetch(URL_GAS, {
+                method: 'POST',
+                body: JSON.stringify({
+                    vaga: MINHA_VAGA,
+                    senha: MINHA_SENHA,
+                    acao: "buscar_dados"
+                })
+            });
+
+            const resultado = await resposta.json();
+
+            if (resultado.status === "sucesso") {
+                // Passa os dados recebidos para a sua função de renderização
+                renderizarLista(resultado.dados);
+            } else {
+                alert(resultado.mensagem || "Erro de autenticação.");
+                efetuarLogout();
+            }
+        } catch (error) {
+            console.error(error);
+            document.getElementById('corpo-tabela').innerHTML = "<tr><td colspan='2' style='color: #ef4444; text-align: center; font-weight: 600;'>Erro ao carregar dados do servidor.</td></tr>";
+        }
     }
 
-    function carregarDados() {
-        const script = document.createElement('script');
-        script.src = URL_GAS + '?callback=processarDados';
-        document.body.appendChild(script);
-    }
-
+    // Sua função original de processamento e montagem visual mantida intacta
     function renderizarLista(historico) {
         const totalConsumo = historico.reduce((acc, curr) => acc + curr.consumo, 0);
         document.getElementById('total-kwh').innerText = totalConsumo.toFixed(2) + " kWh";
@@ -69,13 +124,22 @@
         const corpoTabela = document.getElementById('corpo-tabela');
         corpoTabela.innerHTML = ""; 
 
+        if (historico.length === 0) {
+            corpoTabela.innerHTML = "<tr><td colspan='2' style='text-align: center; color: #64748b;'>Nenhum registro encontrado para esta vaga.</td></tr>";
+            return;
+        }
+
         historico.forEach(item => {
             const dataFormatada = new Date(item.data).toLocaleString('pt-BR');
             corpoTabela.innerHTML += `<tr><td>${dataFormatada}</td><td>${item.consumo.toFixed(2)} kWh</td></tr>`;
         });
     }
 
-    carregarDados();
+    // Função para limpar a sessão ao sair
+    function efectuarLogout() {
+        sessionStorage.clear();
+        window.location.href = "index.html";
+    }
 </script>
 </body>
 </html>
